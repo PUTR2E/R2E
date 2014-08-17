@@ -199,6 +199,7 @@ rule "AnchorsAGRO"
         	slotName == "ROOT")    
     session : sessionClass(
         mode == "agro")	
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
         
     then
     	slotInstance rootInstance = new slotInstance();
@@ -225,6 +226,7 @@ rule "ComplexAnchorsAGRO"
         	slotName == "ROOT")    
    session : sessionClass(
         mode == "agro")	
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
         
     then
     	slotInstance rootInstance = new slotInstance();
@@ -251,6 +253,7 @@ rule "ComplexAnchors2AGRO"
         	slotName == "ROOT")    
     session : sessionClass(
         mode == "agro")	
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
          
     then
     	slotInstance rootInstance = new slotInstance();
