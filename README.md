@@ -1,3 +1,3 @@
 R2E
 ===
-This is a github repository for the R2E system. Content will be provided shortly.
+Currently we are providing 14 tested extraction rules for aggressive and basic modes; WordNet vocabulary import; sample event template. For additional rule modes, additional specific rules, additional vocabulary imports more event templates please contact me at kubadt@gmail.com.
