@@ -1,0 +1,367 @@
+package com.sample
+ 
+import com.sample.DroolsTest.hasLex;
+import com.sample.DroolsTest.isA;
+import com.sample.DroolsTest.dependency;
+import com.sample.DroolsTest;
+import com.sample.DroolsTest.sessionClass;
+import com.sample.DroolsTest.slot;
+import com.sample.DroolsTest.slotInstance;
+ 
+
+rule "Anchors"
+    when	    
+    m : dependency(
+        	type == "root",
+        	argument1 == "ROOT",
+        	position1 == 0)
+    s : slot(
+        	dependencyName == "root",
+        	slotName == "ROOT")    
+    session : sessionClass(
+        mode == "basic")	
+         eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = "ROOT";
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "ComplexAnchors"
+    when	    
+    mp : dependency(
+        	type == "root",
+        	argument1 == "ROOT",
+        	position1 == 0)
+    m : dependency(
+        	type == "conj",
+        	argument1 == mp.argument2,
+        	position1 == mp.position2)
+    s : slot(
+        	dependencyName == "root",
+        	slotName == "ROOT")    
+   session : sessionClass(
+        mode == "basic")	
+         eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = "ROOT";
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "ComplexAnchors2"
+    when	    
+    mp : dependency(
+        	type == "root",
+        	argument1 == "ROOT",
+        	position1 == 0)
+    m : dependency(
+        	type == "ccomp",
+        	argument1 == mp.argument2,
+        	position1 == mp.position2)
+    s : slot(
+        	dependencyName == "root",
+        	slotName == "ROOT")    
+    session : sessionClass(
+        mode == "basic")	
+         eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = "ROOT";
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "Slots"
+    when	    
+    root : slotInstance ()
+    
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position)
+    s : slot(
+        	dependencyName == m.type)    
+    session : sessionClass(
+        mode == "basic")	
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext =session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsPassive1"
+    when	    
+    root : slotInstance ()
+    
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position,
+        	type == "nsubjpass")
+    s : slot(
+        	dependencyName == "dobj")    
+    session : sessionClass(
+        mode == "basic")	
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsPassive2"
+    when	    
+    root : slotInstance ()
+    
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position,
+        	type == "agent")
+    s : slot(
+        	dependencyName == "nsubj")    
+    session : sessionClass(
+        mode == "basic")	
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsPreposition"
+    when	    
+    root : slotInstance ()
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position,
+        	type == "prep")
+    m2 : dependency(
+        	argument1 == m.argument2,
+        	position1 == m.position2,
+        	type == "pobj")
+
+    s : slot()    
+    session : sessionClass(
+        mode == "basic")
+        eval(com.sample.DroolsTest.PrepositionMatch(s.acceptablePrepositions,m2.argument2))
+        eval(com.sample.DroolsTest.Lexicalizes(s.acceptableClasses,m.argument2,session.session))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+
+//--------AGGRESSIVE MODE
+
+rule "AnchorsAGRO"
+    when	    
+    m : dependency(
+        	type == "root",
+        	argument1 == "ROOT",
+        	position1 == 0)
+    s : slot(
+        	dependencyName == "root",
+        	slotName == "ROOT")    
+    session : sessionClass(
+        mode == "agro")	
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = "ROOT";
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "ComplexAnchorsAGRO"
+    when	    
+    mp : dependency(
+        	type == "root",
+        	argument1 == "ROOT",
+        	position1 == 0)
+    m : dependency(
+        	type == "conj",
+        	argument1 == mp.argument2,
+        	position1 == mp.position2)
+    s : slot(
+        	dependencyName == "root",
+        	slotName == "ROOT")    
+   session : sessionClass(
+        mode == "agro")	
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = "ROOT";
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "ComplexAnchors2AGRO"
+    when	    
+    mp : dependency(
+        	type == "root",
+        	argument1 == "ROOT",
+        	position1 == 0)
+    m : dependency(
+        	type == "ccomp",
+        	argument1 == mp.argument2,
+        	position1 == mp.position2)
+    s : slot(
+        	dependencyName == "root",
+        	slotName == "ROOT")    
+    session : sessionClass(
+        mode == "agro")	
+         
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = "ROOT";
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsAGRO"
+    when	    
+    root : slotInstance ()
+    
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position)
+    s : slot(
+        	dependencyName == m.type)    
+    session : sessionClass(
+        mode == "agro")	
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext =session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsPassive1AGRO"
+    when	    
+    root : slotInstance ()
+    
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position,
+        	type == "nsubjpass")
+    s : slot(
+        	dependencyName == "dobj")    
+    session : sessionClass(
+        mode == "agro")	
+         
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsPassive2AGRO"
+    when	    
+    root : slotInstance ()
+    
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position,
+        	type == "agent")
+    s : slot(
+        	dependencyName == "nsubj")    
+    session : sessionClass(
+        mode == "agro")	
+         
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+rule "SlotsPrepositionAGRO"
+    when	    
+    root : slotInstance ()
+    m : dependency(
+        	argument1 == root.Text,
+        	position1 == root.Position,
+        	type == "prep")
+    m2 : dependency(
+        	argument1 == m.argument2,
+        	position1 == m.position2,
+        	type == "pobj")
+
+    s : slot()    
+    session : sessionClass(
+        mode == "basic")
+        eval(com.sample.DroolsTest.PrepositionMatch(s.acceptablePrepositions,m2.argument2))
+        
+    then
+    	slotInstance rootInstance = new slotInstance();
+    	rootInstance.Name = s.name;
+    	rootInstance.SlotName = s.slotName;
+    	rootInstance.Text = m.argument2;
+    	rootInstance.Position = m.position2;
+    	rootInstance.processingContext = session.mode;
+    	rootInstance.sentenceContext = m.sentenceContext;
+    	insert(rootInstance);
+end
+
+
+rule "Print"
+when	    
+    root : slotInstance ()
+then
+	System.out.println(root.SlotName +": "+root.Text);
+end
