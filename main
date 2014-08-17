@@ -1,0 +1,253 @@
+package com.sample;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.rule.EntryPoint;
+import org.kie.api.runtime.rule.FactHandle;
+
+import edu.smu.tspell.wordnet.NounSynset;
+import edu.smu.tspell.wordnet.Synset;
+import edu.smu.tspell.wordnet.SynsetType;
+import edu.smu.tspell.wordnet.WordNetDatabase;
+import edu.stanford.nlp.ling.HasWord;
+import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
+import edu.stanford.nlp.process.DocumentPreprocessor;
+import edu.stanford.nlp.trees.GrammaticalStructure;
+import edu.stanford.nlp.trees.GrammaticalStructureFactory;
+import edu.stanford.nlp.trees.PennTreebankLanguagePack;
+import edu.stanford.nlp.trees.Tree;
+import edu.stanford.nlp.trees.TreebankLanguagePack;
+import edu.stanford.nlp.trees.TypedDependency;
+
+/**
+ * This is a sample class to launch a rule.
+ */
+public class DroolsTest {
+//To make this code work you need to add stanford dependencies, wordnet dependencies and drools dependencies to your project
+    public static final void main(String[] args) {
+  
+        //REMEMBER TO SET YOUR WORDNET PATH
+    	System.setProperty("wordnet.database.dir", "D:\\\\WordNet\\2.1\\dict");
+    	NounSynset nounSynset;
+    	NounSynset[] hyponyms; 
+    	
+    	WordNetDatabase database = WordNetDatabase.getFileInstance(); 
+
+    	
+        try {
+	        KieServices ks = KieServices.Factory.get();
+    	    KieContainer kContainer = ks.getKieClasspathContainer();
+        	KieSession kSession = kContainer.newKieSession("ksession-rules");
+        	//We are only adding persons to vocab, change to "person" to "entity" if you want to start with WordNet root
+        	Synset[] synsets = database.getSynsets("person", SynsetType.NOUN); 
+        	sessionClass sessionC = new sessionClass();
+        	sessionC.session = kSession;
+        	sessionC.mode = "basic";
+        	kSession.insert(sessionC);
+        	addEventVocabulary(kSession);
+        	//Depth of the WordNet vocabulary is specified in this call
+            addHypnonyms(synsets[0],3,kSession);
+            addParsing("fn", kSession);
+            addKidnappingEvent(kSession);
+            kSession.fireAllRules();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+    
+    public static class sessionClass
+    {
+    	public KieSession session;
+    	public String mode;
+    }
+    
+    public static class isA
+    {
+    	public String wideClass;
+    	public String narrowClass;
+    }
+    public static class hasLex
+    {
+    	public String class_;
+    	public String lexicalization;
+    }
+    public static class dependency
+    {
+    	public String type;
+    	public String argument1;
+    	public String argument2;
+    	public int position1;
+    	public int position2;
+    	public String processingContext;
+    	public String sentenceContext;
+    }
+    public static class slot
+    {
+    	public String name;
+    	public String slotName;
+    	public String dependencyName;
+    	public ArrayList<String> acceptableClasses;
+    	public ArrayList<String> acceptablePrepositions;
+    }
+    public static class slotInstance
+    {
+    	public String Name;
+    	public String SlotName;
+    	public String Text;
+    	public int Position;
+    	public String processingContext;
+    	public String sentenceContext;
+    	public int rootID;
+    }
+    //Vocabulary is created in this method, sample method uses WordNet as its primary resource
+	static void addHypnonyms(Synset ns, int depth, KieSession s)
+	{
+		if(ns.getType() != SynsetType.NOUN)
+			return;
+		if(depth == 0)
+			return;
+		Synset[] hyponimy = ((NounSynset) ns).getHyponyms();
+		for(int i = 0; i<hyponimy.length; i++)
+		{
+			isA WordNetSearch = new isA();
+        	WordNetSearch.wideClass = "#" + ns.getWordForms()[0].toLowerCase();
+	    	WordNetSearch.narrowClass = "#" + hyponimy[i].getWordForms()[0].toLowerCase();
+	    	s.insert(WordNetSearch);
+	    	for(int j = 0; j<hyponimy[i].getWordForms().length; j++)
+	    	{
+	    		hasLex Lexicalization = new hasLex();
+	    		Lexicalization.class_ = "#" + hyponimy[i].getWordForms()[0].toLowerCase();
+	    		Lexicalization.lexicalization = hyponimy[i].getWordForms()[j].toLowerCase();
+	    		s.insert(Lexicalization);
+	    	}
+			addHypnonyms(hyponimy[i],depth-1,s);
+		}
+	}
+	//MODIFY THIS METHOD, USE YOUR PATH FOR THE PARSING MODEL
+	static void addParsing(String filename, KieSession s)
+	{
+	  	String processing_context = "basic";
+    	String sentence_context = "s-";
+    	//change path to your model path
+    	LexicalizedParser lp = LexicalizedParser.loadModel("D://models//englishPCFG.ser.gz");
+    	
+    	TreebankLanguagePack tlp = new PennTreebankLanguagePack();
+        GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
+        // You could also create a tokenizer here (as below) and pass it
+        // to DocumentPreprocessor
+        int sin = 0;
+        for (List<HasWord> sentence : new DocumentPreprocessor(filename)) {
+          Tree parse = lp.apply(sentence);
+          //parse.pennPrint();
+          System.out.println();
+          sin++;
+          GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
+          List<TypedDependency> tdl = gs.typedDependenciesCCprocessed();
+          for(TypedDependency depend : tdl)
+          {
+	          dependency dp = new dependency();
+	          String gov = depend.gov().nodeString();
+	          String dep = depend.dep().nodeString();
+	          int govPos = depend.gov().index();
+	          int depPos = depend.dep().index();
+	          dp.argument1 = gov;
+	          dp.argument2 = dep;
+	          dp.position1 = govPos;
+	          dp.position2 = depPos;
+	          dp.processingContext = processing_context;
+	          dp.sentenceContext = sentence_context + String.valueOf(sin);
+	          dp.type = depend.reln().getShortName();
+	          s.insert(dp);
+	      }
+        }
+	}
+	//Specify slots of events here
+	static void addKidnappingEvent(KieSession s)
+	{
+		slot Anchor = new slot();
+		slot Perp = new slot();
+		slot Agent = new slot();
+		
+		Anchor.acceptableClasses = new ArrayList<String>(Arrays.asList("#kidnapping"));
+		Anchor.dependencyName = "root";
+		Anchor.name = "Kidnapping";
+		Anchor.slotName = "ROOT";
+		Anchor.acceptablePrepositions = new ArrayList<String>();
+		
+		Agent.acceptableClasses = new ArrayList<String>(Arrays.asList("#person"));
+		Agent.acceptablePrepositions = new ArrayList<String>(Arrays.asList("by"));
+		Agent.dependencyName = "nsubj";
+		Agent.name = "Kidnapping";
+		Agent.slotName = "Perpetrator";
+		
+		Perp.acceptableClasses = new ArrayList<String>(Arrays.asList("#person"));
+		Perp.acceptablePrepositions = new ArrayList<String>();
+		Perp.dependencyName = "dobj";
+		Perp.name = "Kidnapping";
+		Perp.slotName = "Victim";
+		
+		s.insert(Anchor);
+		s.insert(Perp);
+		s.insert(Agent);
+	}
+	//If you want to extract evetns, you need to add specific event and it's vocabulary here, sample code is provided
+	static void addEventVocabulary(KieSession s)
+	{
+		isA ISA_ind = new isA();
+		ISA_ind.wideClass = "#entity";
+		ISA_ind.narrowClass = "#event";
+		s.insert(ISA_ind);
+		ISA_ind = new isA();
+		ISA_ind.wideClass = "#event";
+		ISA_ind.narrowClass = "#kidnapping";
+		s.insert(ISA_ind);
+		hasLex LEX_ind = new hasLex();
+		LEX_ind.class_ = "#kidnapping";
+		LEX_ind.lexicalization = "kidnapped";
+		s.insert(LEX_ind);
+	}
+	//This method is being fired to check if the word belongs to certain class, optional NER or RegExp should be implemented here
+	public static boolean Lexicalizes(Object Class, String Lexem, KieSession s)
+	{
+		@SuppressWarnings("unchecked")
+		ArrayList<String> Classes = (ArrayList<String>)Class;
+		
+		@SuppressWarnings("unchecked")
+		Collection<Object> facts = (Collection<Object>) s.getObjects();
+		for (Object fact : facts)
+		{
+			//System.out.println(fact.getClass().toString());
+			if(fact.getClass() == isA.class)
+			{
+				isA factISA = (isA)fact;
+				if(Classes.contains(factISA.wideClass.toLowerCase()))
+					Classes.add(factISA.narrowClass.toLowerCase());
+			}
+		}
+		for (Object fact : facts)
+		{
+			//System.out.println(fact.getClass().toString());
+			if(fact.getClass() == hasLex.class )
+			{
+				hasLex factLEX = (hasLex)fact;
+				if(Classes.contains(factLEX.class_))
+					if(factLEX.lexicalization.toLowerCase().equals(Lexem.toLowerCase()))
+					return true;
+			}
+		}
+		return false;
+	}
+	//This method compares used preposition with a list of acceptable prepositions in the phrase
+	public static boolean PrepositionMatch(ArrayList<String> acceptablePreps, String Preposition)
+	{
+		return acceptablePreps.contains(Preposition.toLowerCase());
+	}
+}
